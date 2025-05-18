@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mindful Moments</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #ffee9a;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #216b36;
+    }
+    section {
+      background: #e7e7e7;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 600px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+    label, textarea, input, select, button {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button {
+      background-color: #5adc7e;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .entry {
+      background: #e6f7ff;
+      border-left: 4px solid #ff9fdd;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌺 Mindful Moments 🌺</h1>
+
+  <section>
+    <h2>User Profile</h2>
+    <label for="user-id">Enter your name or email:</label>
+    <input type="text" id="user-id" placeholder="e.g., alice@example.com" />
+    <button onclick="switchUser()">Switch User</button>
+  </section>
+
+  <section>
+    <h2>Mood Check-In</h2>
+    <label for="mood">How do you feel today?</label>
+    <select id="mood">
+      <option value="😊">😊 Happy</option>
+      <option value="😐">😐 Okay</option>
+      <option value="😑">😑 Bored</option>
+      <option value="😞">😞 Sad</option>
+      <option value="😰">😰 Stressed</option>
+    </select>
+    <label for="mood-note">Why?</label>
+    <textarea id="mood-note" rows="3"></textarea>
+    <button onclick="saveMood()">Save Mood</button>
+    <div id="mood-entries"></div>
+  </section>
+
+  <section>
+    <h2>Gratitude Journal</h2>
+    <label for="gratitude">What are you grateful for today?</label>
+    <textarea id="gratitude" rows="3"></textarea>
+    <button onclick="saveGratitude()">Save Gratitude</button>
+    <div id="gratitude-entries"></div>
+  </section>
+
+  <section>
+    <h2>Habit Tracker</h2>
+    <form id="custom-habit-form">
+      <label for="new-habit">Add a daily goal:</label>
+      <input type="text" id="new-habit" placeholder="e.g., Read for 20 minutes" />
+      <button type="submit">Add Goal</button>
+    </form>
+    <div id="habit-list"></div>
+    <button onclick="saveHabits()">Save Habits</button>
+    <div id="habit-entries"></div>
+  </section>
+
+  <script>
+    const defaultHabits = ["Meditated 15 mins", "Drank 40oz Water", "Slept 8 Hours", "Exercised 30 mins", "Read for 20 mins", "Fed the Soul 15 mins"];
+    let currentUserId = localStorage.getItem("current-user-id") || "";
+
+    function getKey(key) {
+      return `${currentUserId}-${key}`;
+
+    }
+
+    function switchUser() {
+      const input = document.getElementById("user-id").value.trim();
+      if (!input) {
+        alert("Please enter a user name or email.");
+        return;
+      }
+      currentUserId = input;
+      localStorage.setItem("current-user-id", currentUserId);
+      reloadUserData();
+    }
+
+    function saveMood() {
+      const mood = document.getElementById("mood").value;
+      const note = document.getElementById("mood-note").value;
+      const entry = document.createElement("div");
+      entry.className = "entry";
+      entry.innerText = `${mood} - ${note}`;
+      document.getElementById("mood-entries").appendChild(entry);
+      localStorage.setItem(getKey(`mood-${Date.now()}`), JSON.stringify({ mood, note }));
+    }
+
+    function saveGratitude() {
+      const gratitude = document.getElementById("gratitude").value;
+      const entry = document.createElement("div");
+      entry.className = "entry";
+      entry.innerText = `🙏 ${gratitude}`;
+      document.getElementById("gratitude-entries").appendChild(entry);
+      localStorage.setItem(getKey(`gratitude-${Date.now()}`), gratitude);
+    }
+
+    function saveHabits() {
+      const checkedHabits = Array.from(document.querySelectorAll(".habit:checked"))
+        .map(input => input.value);
+      if (checkedHabits.length > 0) {
+        const entry = document.createElement("div");
+        entry.className = "entry";
+        entry.innerText = `✅ Habits: ${checkedHabits.join(", ")}`;
+        document.getElementById("habit-entries").appendChild(entry);
+        localStorage.setItem(getKey(`habit-${Date.now()}`), JSON.stringify(checkedHabits));
+        localStorage.setItem(getKey("user-selected-habits"), JSON.stringify(checkedHabits));
+      }
+    }
+
+    function loadHabits() {
+      const savedCustom = JSON.parse(localStorage.getItem(getKey("custom-habits"))) || [];
+      const selectedHabits = JSON.parse(localStorage.getItem(getKey("user-selected-habits"))) || [];
+      const allHabits = [...new Set([...defaultHabits, ...savedCustom])];
+      const habitList = document.getElementById("habit-list");
+      habitList.innerHTML = "";
+      allHabits.forEach(habit => {
+        const label = document.createElement("label");
+        const checked = selectedHabits.includes(habit) ? "checked" : "";
+        label.innerHTML = `<input type="checkbox" class="habit" value="${habit}" ${checked}/> ${habit}`;
+        habitList.appendChild(label);
+      });
+    }
+
+    document.getElementById("custom-habit-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const newHabitInput = document.getElementById("new-habit");
+      const newHabit = newHabitInput.value.trim();
+      if (newHabit) {
+        const savedHabits = JSON.parse(localStorage.getItem(getKey("custom-habits"))) || [];
+        savedHabits.push(newHabit);
+        localStorage.setItem(getKey("custom-habits"), JSON.stringify(savedHabits));
+        loadHabits();
+        newHabitInput.value = "";
+      }
+    });
+
+    function reloadUserData() {
+      document.getElementById("mood-entries").innerHTML = "";
+      document.getElementById("gratitude-entries").innerHTML = "";
+      document.getElementById("habit-entries").innerHTML = "";
+      loadHabits();
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key.startsWith(currentUserId)) continue;
+
+        if (key.includes("-mood-")) {
+          const { mood, note } = JSON.parse(localStorage.getItem(key));
+          const entry = document.createElement("div");
+          entry.className = "entry";
+          entry.innerText = `${mood} - ${note}`;
+          document.getElementById("mood-entries").appendChild(entry);
+        } else if (key.includes("-gratitude-")) {
+          const gratitude = localStorage.getItem(key);
+          const entry = document.createElement("div");
+          entry.className = "entry";
+          entry.innerText = `🙏 ${gratitude}`;
+          document.getElementById("gratitude-entries").appendChild(entry);
+        } else if (key.includes("-habit-")) {
+          const habits = JSON.parse(localStorage.getItem(key));
+          const entry = document.createElement("div");
+          entry.className = "entry";
+          entry.innerText = `✅ Habits: ${habits.join(", ")}`;
+          document.getElementById("habit-entries").appendChild(entry);
+        }
+      }
+    }
+
+    window.onload = () => {
+      const storedId = localStorage.getItem("current-user-id");
+      if (storedId) {
+        document.getElementById("user-id").value = storedId;
+        currentUserId = storedId;
+        reloadUserData();
+      }
+    };
+  </script>
+</body>
+</html>
